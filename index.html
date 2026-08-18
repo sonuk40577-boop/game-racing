@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="description" content="Highway Traffic Racer - High-speed arcade traffic dodging game built with HTML5 Canvas, Web Audio API, and Vanilla JavaScript." />
+  <meta name="theme-color" content="#0a0e17" />
+  <title>Highway Traffic Racer | 3D Arcade Speed Challenge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;900&family=Teko:wght@500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="game-wrapper">
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- In-Game HUD -->
+    <div id="hud" class="overlay-layer hidden">
+      <!-- Top Bar -->
+      <div class="hud-top">
+        <div class="hud-card score-card">
+          <span class="hud-label">SCORE</span>
+          <span id="hud-score" class="hud-value">0</span>
+        </div>
+
+        <div class="hud-card distance-card">
+          <span class="hud-label">DISTANCE</span>
+          <span id="hud-distance" class="hud-value">0.0 <span class="unit">KM</span></span>
+        </div>
+
+        <div class="hud-card coins-card">
+          <span class="hud-label">COINS</span>
+          <span id="hud-coins" class="hud-value"><span class="coin-icon">🪙</span> <span id="hud-coins-val">0</span></span>
+        </div>
+
+        <button id="btn-pause" class="hud-icon-btn" aria-label="Pause Game" title="Pause">
+          <span>⏸</span>
+        </button>
+      </div>
+
+      <!-- Combo & Close Call Popup Container -->
+      <div id="popup-container"></div>
+
+      <!-- Active Powerups Bar -->
+      <div id="powerups-hud" class="powerups-hud"></div>
+
+      <!-- Bottom Speedometer & Nitro -->
+      <div class="hud-bottom">
+        <div class="speed-cluster">
+          <div class="speed-dial">
+            <span id="hud-speed" class="speed-value">0</span>
+            <span class="speed-unit">KM/H</span>
+          </div>
+        </div>
+
+        <div class="nitro-cluster">
+          <div class="nitro-header">
+            <span class="nitro-title">⚡ NITRO BOOST</span>
+            <span id="nitro-status" class="nitro-pct">100%</span>
+          </div>
+          <div class="nitro-bar-container">
+            <div id="nitro-bar" class="nitro-bar-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mobile Touch Controls -->
+      <div id="mobile-controls" class="mobile-controls">
+        <div class="touch-group steer-group">
+          <button id="touch-left" class="touch-btn steer-btn" aria-label="Steer Left">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <button id="touch-right" class="touch-btn steer-btn" aria-label="Steer Right">
+            <svg viewBox="0 0 24 24" width="36" height="36" fill="currentColor"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </button>
+        </div>
+
+        <div class="touch-group action-group">
+          <button id="touch-brake" class="touch-btn brake-btn" aria-label="Brake">
+            <span>BRAKE</span>
+          </button>
+          <button id="touch-boost" class="touch-btn boost-btn" aria-label="Nitro Boost">
+            <span>BOOST</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Splash Screen (Premium AAA Intro) -->
+    <div id="screen-splash" class="screen-splash active">
+      <div class="splash-backdrop" style="background-image: url('splash.jpg');"></div>
+      <div class="splash-overlay"></div>
+      <div class="splash-content">
+        <div class="splash-branding">
+          <div class="splash-badge">ARCADE HIGHWAY RACER</div>
+        </div>
+
+        <div class="splash-footer">
+          <div id="splash-loading-area" class="splash-loading-area">
+            <div id="splash-status-text" class="splash-status-text">LOADING GAME DATA...</div>
+            <div class="splash-progress-track">
+              <div id="splash-progress-bar" class="splash-progress-bar">
+                <div class="splash-car-marker">🏎️</div>
+              </div>
+            </div>
+          </div>
+
+          <button id="splash-btn-play" class="splash-tap-btn hidden" aria-label="Tap to Play">
+            <span class="splash-tap-glow"></span>
+            <span class="splash-tap-text">⚡ TAP TO PLAY ⚡</span>
+            <span class="splash-tap-sub">CLICK ANYWHERE OR PRESS ANY KEY</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Menu Overlay -->
+    <div id="screen-menu" class="screen-modal hidden">
+      <div class="menu-content glass-panel">
+        <div class="brand-badge">ARCADE HIGHWAY RACER</div>
+        <h1 class="game-title">TRAFFIC<br/><span class="neon-text">OVERDRIVE</span></h1>
+        <p class="game-subtitle">Dodge traffic • Near-miss overtakes • Dominate the asphalt</p>
+
+        <div class="stats-ribbon">
+          <div class="stat-pill">
+            <span class="stat-lbl">BEST SCORE</span>
+            <span id="menu-best-score" class="stat-num">0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-lbl">TOTAL COINS</span>
+            <span id="menu-total-coins" class="stat-num">🪙 0</span>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-lbl">MAX DISTANCE</span>
+            <span id="menu-best-dist" class="stat-num">0.0 KM</span>
+          </div>
+        </div>
+
+        <div class="menu-actions">
+          <button id="btn-play" class="btn btn-primary btn-pulse">
+            <span class="btn-glow"></span>
+            <span class="btn-text">▶ PLAY NOW</span>
+          </button>
+          <div class="btn-row">
+            <button id="btn-garage" class="btn btn-secondary">
+              <span>🏎️ GARAGE</span>
+            </button>
+            <button id="btn-environment" class="btn btn-secondary">
+              <span>🌆 TRACK</span>
+            </button>
+            <button id="btn-settings" class="btn btn-secondary">
+              <span>⚙️ SETTINGS</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="controls-hint">
+          <span>🎮 <b>Controls:</b> Arrow Keys / WASD • <b>Boost:</b> Shift / Space / W • <b>Brake:</b> S / Down</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Garage Screen Modal -->
+    <div id="screen-garage" class="screen-modal hidden">
+      <div class="garage-content glass-panel">
+        <div class="modal-header">
+          <h2>CAR GARAGE</h2>
+          <button id="garage-btn-close" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="garage-viewport">
+          <div class="garage-car-preview">
+            <canvas id="garageCarCanvas" width="280" height="240"></canvas>
+            <div id="garage-car-name" class="car-title">STREET RUNNER</div>
+            <div id="garage-car-tag" class="car-tagline">Balanced All-Rounder</div>
+          </div>
+
+          <div class="garage-stats-card">
+            <div class="stat-row">
+              <span>TOP SPEED</span>
+              <div class="stat-track"><div id="stat-speed-bar" class="stat-fill"></div></div>
+            </div>
+            <div class="stat-row">
+              <span>ACCELERATION</span>
+              <div class="stat-track"><div id="stat-accel-bar" class="stat-fill"></div></div>
+            </div>
+            <div class="stat-row">
+              <span>HANDLING</span>
+              <div class="stat-track"><div id="stat-handling-bar" class="stat-fill"></div></div>
+            </div>
+            <div class="stat-row">
+              <span>NITRO DURATION</span>
+              <div class="stat-track"><div id="stat-nitro-bar" class="stat-fill"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Garage Navigation -->
+        <div class="garage-nav">
+          <button id="garage-prev" class="btn-nav">&lt;</button>
+          <div id="garage-car-dots" class="car-dots"></div>
+          <button id="garage-next" class="btn-nav">&gt;</button>
+        </div>
+
+        <div class="garage-action-area">
+          <button id="garage-btn-action" class="btn btn-primary btn-block">
+            <span id="garage-action-text">SELECT CAR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Environment Screen Modal -->
+    <div id="screen-environment" class="screen-modal hidden">
+      <div class="env-content glass-panel">
+        <div class="modal-header">
+          <h2>SELECT HIGHWAY</h2>
+          <button id="env-btn-close" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="env-grid" id="env-grid">
+          <!-- Environments rendered by JS -->
+        </div>
+
+        <button id="env-btn-confirm" class="btn btn-primary btn-block">CONFIRM TRACK</button>
+      </div>
+    </div>
+
+    <!-- Settings Screen Modal -->
+    <div id="screen-settings" class="screen-modal hidden">
+      <div class="settings-content glass-panel">
+        <div class="modal-header">
+          <h2>SETTINGS</h2>
+          <button id="settings-btn-close" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="settings-list">
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">SOUND EFFECTS</span>
+              <span class="setting-desc">Engine, overtakes, crashes, and chimes</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="set-sound" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">MUSIC SYNTH</span>
+              <span class="setting-desc">Procedural synthwave background music</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="set-music" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">SCREEN SHAKE & PARTICLES</span>
+              <span class="setting-desc">Dynamic impact and boost vibration effects</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="set-shake" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-title">STEERING SENSITIVITY</span>
+              <span class="setting-desc">Adjust car response speed</span>
+            </div>
+            <input type="range" id="set-sensitivity" min="0.7" max="1.5" step="0.1" value="1.0" class="range-slider" />
+          </div>
+        </div>
+
+        <button id="settings-btn-save" class="btn btn-primary btn-block">SAVE & BACK</button>
+      </div>
+    </div>
+
+    <!-- Pause Overlay Modal -->
+    <div id="screen-pause" class="screen-modal hidden">
+      <div class="pause-content glass-panel">
+        <h2 class="pause-title">GAME PAUSED</h2>
+        <div class="pause-stats">
+          <div><span class="lbl">CURRENT SCORE</span><span id="pause-score" class="val">0</span></div>
+          <div><span class="lbl">DISTANCE</span><span id="pause-dist" class="val">0.0 KM</span></div>
+          <div><span class="lbl">OVERTAKES</span><span id="pause-overtakes" class="val">0</span></div>
+        </div>
+
+        <div class="pause-actions">
+          <button id="pause-btn-resume" class="btn btn-primary btn-block">▶ RESUME</button>
+          <button id="pause-btn-restart" class="btn btn-secondary btn-block">🔄 RESTART</button>
+          <button id="pause-btn-menu" class="btn btn-danger btn-block">🏠 QUIT TO MENU</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game Over Screen Modal -->
+    <div id="screen-gameover" class="screen-modal hidden">
+      <div class="gameover-content glass-panel">
+        <div class="crash-badge">CRASHED!</div>
+        <h2 class="gameover-title">GAME OVER</h2>
+
+        <div id="gameover-new-record" class="high-score-banner hidden">
+          🏆 NEW HIGH SCORE RECORD! 🏆
+        </div>
+
+        <div class="gameover-stats-grid">
+          <div class="go-stat-card">
+            <span class="go-lbl">FINAL SCORE</span>
+            <span id="go-score" class="go-val highlight">0</span>
+          </div>
+          <div class="go-stat-card">
+            <span class="go-lbl">DISTANCE</span>
+            <span id="go-distance" class="go-val">0.0 KM</span>
+          </div>
+          <div class="go-stat-card">
+            <span class="go-lbl">TOTAL OVERTAKES</span>
+            <span id="go-overtakes" class="go-val">0</span>
+          </div>
+          <div class="go-stat-card">
+            <span class="go-lbl">CLOSE CALLS</span>
+            <span id="go-nearmiss" class="go-val">0</span>
+          </div>
+          <div class="go-stat-card">
+            <span class="go-lbl">COINS EARNED</span>
+            <span id="go-coins" class="go-val coin-text">+0</span>
+          </div>
+          <div class="go-stat-card">
+            <span class="go-lbl">BEST SCORE</span>
+            <span id="go-best-score" class="go-val">0</span>
+          </div>
+        </div>
+
+        <div class="gameover-actions">
+          <button id="go-btn-restart" class="btn btn-primary btn-pulse btn-block">
+            <span class="btn-text">🔄 PLAY AGAIN</span>
+          </button>
+          <div class="btn-row">
+            <button id="go-btn-garage" class="btn btn-secondary">🏎️ GARAGE</button>
+            <button id="go-btn-menu" class="btn btn-secondary">🏠 MAIN MENU</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
